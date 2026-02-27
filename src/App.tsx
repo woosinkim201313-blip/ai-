@@ -49,18 +49,31 @@ export default function App() {
     fetchAnnouncements();
 
     // Socket.io connection
-    const socket = io();
-    socket.on('new_announcement', (announcement: Announcement) => {
-      setAnnouncements(prev => [announcement, ...prev]);
-      setNewAnnouncementAlert(announcement);
-    });
+    let socket: any;
+    try {
+      socket = io({
+        reconnectionAttempts: 5,
+        timeout: 10000,
+      });
+      
+      socket.on('new_announcement', (announcement: Announcement) => {
+        setAnnouncements(prev => [announcement, ...prev]);
+        setNewAnnouncementAlert(announcement);
+      });
 
-    socket.on('delete_announcement', (id: string) => {
-      setAnnouncements(prev => prev.filter(a => a.id !== parseInt(id)));
-    });
+      socket.on('delete_announcement', (id: string) => {
+        setAnnouncements(prev => prev.filter(a => a.id !== parseInt(id)));
+      });
+
+      socket.on('connect_error', (err: any) => {
+        console.error('Socket connection error:', err);
+      });
+    } catch (error) {
+      console.error('Failed to initialize socket:', error);
+    }
 
     return () => {
-      socket.disconnect();
+      if (socket) socket.disconnect();
     };
   }, []);
 
